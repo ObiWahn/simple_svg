@@ -39,6 +39,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 
 #include <iostream>
+#include <optional>
+#include <string>
+
 
 namespace svg
 {
@@ -137,10 +140,18 @@ namespace svg
     {
         enum Origin { TopLeft, BottomLeft, TopRight, BottomRight };
 
-        Layout(Dimensions const & dimensions = Dimensions(400, 300), Origin origin = BottomLeft,
-            double scale = 1, Point const & origin_offset = Point(0, 0))
-            : dimensions(dimensions), scale(scale), origin(origin), origin_offset(origin_offset) { }
+        Layout(Dimensions const & dimensions = Dimensions(400, 300)
+              ,Dimensions const & window = Dimensions(1500, 1500)
+              ,Origin origin = BottomLeft
+              ,double scale = 1
+              ,Point const & origin_offset = Point(0, 0))
+            : dimensions(dimensions)
+            , window(window)
+            , scale(scale)
+            , origin(origin)
+            , origin_offset(origin_offset) { }
         Dimensions dimensions;
+        Dimensions window;
         double scale;
         Origin origin;
         Point origin_offset;
@@ -602,7 +613,15 @@ namespace svg
     {
     public:
         Document(std::string const & file_name, Layout layout = Layout())
-            : file_name(file_name), layout(layout) { }
+            : layout(layout)
+            , stream_real(file_name)
+            , stream(stream_real.value())
+            { }
+
+        Document(std::ostream& out, Layout layout = Layout())
+            : layout(layout)
+            , stream(out)
+            { }
 
         Document & operator<<(Shape const & shape)
         {
@@ -611,29 +630,34 @@ namespace svg
         }
         std::string toString() const
         {
+            using namespace std::literals::string_literals;
             std::stringstream ss;
             ss << "<?xml " << attribute("version", "1.0") << attribute("standalone", "no")
                 << "?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
                 << "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg "
-                << attribute("width", layout.dimensions.width, "px")
-                << attribute("height", layout.dimensions.height, "px")
+                << attribute("width", layout.window.width, "px")
+                << attribute("height", layout.window.height, "px")
+                << attribute("viewBox", "0 0 "s + std::to_string(layout.dimensions.width) +" "s + std::to_string(layout.dimensions.height) )
+                << attribute("preserveAspectRatio", "xMinYMin meet")
                 << attribute("xmlns", "http://www.w3.org/2000/svg")
                 << attribute("version", "1.1") << ">\n" << body_nodes_str << elemEnd("svg");
             return ss.str();
         }
-        bool save() const
+        bool save()
         {
-            std::ofstream ofs(file_name.c_str());
-            if (!ofs.good())
+            if (!stream.good())
                 return false;
 
-            ofs << toString();
-            ofs.close();
+            stream << toString();
+            if (stream_real){
+                stream_real.value().close();
+            }
             return true;
         }
     private:
-        std::string file_name;
         Layout layout;
+        std::optional<std::ofstream> stream_real;
+        std::ostream& stream;
 
         std::string body_nodes_str;
     };
