@@ -42,7 +42,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <optional>
 #include <string>
 
-
 namespace svg
 {
     // Utility XML/String Functions.
@@ -106,6 +105,7 @@ namespace svg
         double x;
         double y;
     };
+
     optional<Point> getMinPoint(std::vector<Point> const & points)
     {
         if (points.empty())
@@ -140,16 +140,17 @@ namespace svg
     {
         enum Origin { TopLeft, BottomLeft, TopRight, BottomRight };
 
-        Layout(Dimensions const & dimensions = Dimensions(400, 300)
-              ,Dimensions const & window = Dimensions(1500, 1500)
-              ,Origin origin = BottomLeft
-              ,double scale = 1
-              ,Point const & origin_offset = Point(0, 0))
-            : dimensions(dimensions)
-            , window(window)
-            , scale(scale)
-            , origin(origin)
-            , origin_offset(origin_offset) { }
+        Layout(Dimensions const & _dimensions = Dimensions(400, 300)
+              ,Dimensions const & _window = Dimensions(1500, 1500)
+              ,Origin _origin = BottomLeft
+              ,double _scale = 1
+              ,Point const&  _origin_offset = Point(0,0))
+            : dimensions(_dimensions)
+            , window(_window)
+            , scale(_scale)
+            , origin(_origin)
+            , origin_offset(_origin_offset)
+            { }
         Dimensions dimensions;
         Dimensions window;
         double scale;
@@ -158,21 +159,35 @@ namespace svg
     };
 
     // Convert coordinates in user space to SVG native space.
-    double translateX(double x, Layout const & layout)
+    double translateX(Layout const & layout, double x, double w = 0 )
     {
-        if (layout.origin == Layout::BottomRight || layout.origin == Layout::TopRight)
-            return layout.dimensions.width - ((x + layout.origin_offset.x) * layout.scale);
-        else
-            return (layout.origin_offset.x + x) * layout.scale;
+        auto x_out = (x + layout.origin_offset.x) * layout.scale;
+        switch (layout.origin) {
+            case Layout::TopLeft:
+            case Layout::BottomLeft:
+                return x_out;
+            case Layout::TopRight:
+            case Layout::BottomRight:
+            default: //avoid warnging
+                return layout.dimensions.width - x_out - w;
+        }
     }
 
-    double translateY(double y, Layout const & layout)
+    double translateY(Layout const & layout, double y, double h = 0 )
     {
-        if (layout.origin == Layout::BottomLeft || layout.origin == Layout::BottomRight)
-            return layout.dimensions.height - ((y + layout.origin_offset.y) * layout.scale);
-        else
-            return (layout.origin_offset.y + y) * layout.scale;
+        auto y_out = (y + layout.origin_offset.y) * layout.scale;
+
+        switch (layout.origin) {
+            case Layout::TopLeft:
+            case Layout::TopRight:
+                return y_out;
+            case Layout::BottomLeft:
+            case Layout::BottomRight:
+            default: //avoid warnging
+                return layout.dimensions.height - y_out - h;
+        }
     }
+
     double translateScale(double dimension, Layout const & layout)
     {
         return dimension * layout.scale;
@@ -322,8 +337,8 @@ namespace svg
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
-            ss << elemStart("circle") << attribute("cx", translateX(center.x, layout))
-                << attribute("cy", translateY(center.y, layout))
+            ss << elemStart("circle") << attribute("cx", translateX(layout, center.x))
+                << attribute("cy", translateY(layout, center.y))
                 << attribute("r", translateScale(radius, layout)) << fill.toString(layout)
                 << stroke.toString(layout) << emptyElemEnd();
             return ss.str();
@@ -348,8 +363,8 @@ namespace svg
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
-            ss << elemStart("ellipse") << attribute("cx", translateX(center.x, layout))
-                << attribute("cy", translateY(center.y, layout))
+            ss << elemStart("ellipse") << attribute("cx", translateX(layout, center.x))
+                << attribute("cy", translateY(layout, center.y))
                 << attribute("rx", translateScale(radius_width, layout))
                 << attribute("ry", translateScale(radius_height, layout))
                 << fill.toString(layout) << stroke.toString(layout) << emptyElemEnd();
@@ -376,11 +391,12 @@ namespace svg
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
-            ss << elemStart("rect") << attribute("x", translateX(edge.x, layout))
-                << attribute("y", translateY(edge.y, layout))
-                << attribute("width", translateScale(width, layout))
-                << attribute("height", translateScale(height, layout))
-                << fill.toString(layout) << stroke.toString(layout) << emptyElemEnd();
+            ss << elemStart("rect")
+               << attribute("x", translateX(layout, edge.x, width))
+               << attribute("y", translateY(layout, edge.y, height))
+               << attribute("width", translateScale(width, layout))
+               << attribute("height", translateScale(height, layout))
+               << fill.toString(layout) << stroke.toString(layout) << emptyElemEnd();
             return ss.str();
         }
         void offset(Point const & offset)
@@ -389,7 +405,7 @@ namespace svg
             edge.y += offset.y;
         }
     private:
-        Point edge;
+        Point edge; // vector to origin (top left point)
         double width;
         double height;
     };
@@ -404,10 +420,10 @@ namespace svg
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
-            ss << elemStart("line") << attribute("x1", translateX(start_point.x, layout))
-                << attribute("y1", translateY(start_point.y, layout))
-                << attribute("x2", translateX(end_point.x, layout))
-                << attribute("y2", translateY(end_point.y, layout))
+            ss << elemStart("line") << attribute("x1", translateX(layout, start_point.x))
+                << attribute("y1", translateY(layout, start_point.y))
+                << attribute("x2", translateX(layout, end_point.x))
+                << attribute("y2", translateY(layout, end_point.y))
                 << stroke.toString(layout) << emptyElemEnd();
             return ss.str();
         }
@@ -442,7 +458,7 @@ namespace svg
 
             ss << "points=\"";
             for (unsigned i = 0; i < points.size(); ++i)
-                ss << translateX(points[i].x, layout) << "," << translateY(points[i].y, layout) << " ";
+                ss << translateX(layout, points[i].x) << "," << translateY(layout, points[i].y) << " ";
             ss << "\" ";
 
             ss << fill.toString(layout) << stroke.toString(layout) << emptyElemEnd();
@@ -480,7 +496,7 @@ namespace svg
 
             ss << "points=\"";
             for (unsigned i = 0; i < points.size(); ++i)
-                ss << translateX(points[i].x, layout) << "," << translateY(points[i].y, layout) << " ";
+                ss << translateX(layout, points[i].x) << "," << translateY(layout, points[i].y) << " ";
             ss << "\" ";
 
             ss << fill.toString(layout) << stroke.toString(layout) << emptyElemEnd();
@@ -505,8 +521,8 @@ namespace svg
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
-            ss << elemStart("text") << attribute("x", translateX(origin.x, layout))
-                << attribute("y", translateY(origin.y, layout))
+            ss << elemStart("text") << attribute("x", translateX(layout, origin.x))
+                << attribute("y", translateY(layout, origin.y))
                 << fill.toString(layout) << stroke.toString(layout) << font.toString(layout)
                 << ">" << content << elemEnd("text");
             return ss.str();
@@ -632,15 +648,18 @@ namespace svg
         {
             using namespace std::literals::string_literals;
             std::stringstream ss;
-            ss << "<?xml " << attribute("version", "1.0") << attribute("standalone", "no")
-                << "?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
-                << "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg "
-                << attribute("width", layout.window.width, "px")
-                << attribute("height", layout.window.height, "px")
-                << attribute("viewBox", "0 0 "s + std::to_string(layout.dimensions.width) +" "s + std::to_string(layout.dimensions.height) )
-                << attribute("preserveAspectRatio", "xMinYMin meet")
-                << attribute("xmlns", "http://www.w3.org/2000/svg")
-                << attribute("version", "1.1") << ">\n" << body_nodes_str << elemEnd("svg");
+            ss << "<?xml "
+               << attribute("version", "1.0")
+               << attribute("standalone", "no")
+               << "?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
+               << "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<svg "
+               << attribute("width", layout.window.width, "px")
+               << attribute("height", layout.window.height, "px")
+               << attribute("viewBox", "0 0 "s + std::to_string(layout.dimensions.width) +" "s + std::to_string(layout.dimensions.height) )
+               << attribute("preserveAspectRatio", "xMinYMin meet")
+               << attribute("xmlns", "http://www.w3.org/2000/svg")
+               << attribute("version", "1.1") << ">\n"
+               << body_nodes_str << elemEnd("svg");
             return ss.str();
         }
         bool save()
