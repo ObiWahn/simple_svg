@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ******************************************************************************/
 
-#include "simple_svg_1.0.0.hpp"
+#include <simple_svg/simple_svg_1.0.0.hpp>
 
 using namespace svg;
 
@@ -39,7 +39,7 @@ using namespace svg;
 int main()
 {
     Dimensions dimensions(100, 100);
-    Document doc("my_svg.svg", Layout(dimensions, Layout::BottomLeft));
+    Document doc("my.svg", Layout(dimensions, Layout::BottomLeft));
 
     // Red image border.
     Polygon border(Stroke(1, Color::Red));
