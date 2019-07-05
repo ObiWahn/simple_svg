@@ -1,0 +1,18 @@
+<html>
+<head>
+  <script type="text/javascript">
+    window.onload = function() {
+        var image = document.getElementById("image");
+        function updateImage() {
+            image.src = image.src.split("?")[0] + "?" + new Date().getTime();
+        }
+        setInterval(updateImage, 100);
+    }
+  </script>
+</head>
+<body>
+  <div id="refresh">
+    <img src="out.svg" id="image" alt="simple svg image" >
+  </div>
+</body>
+</html>
