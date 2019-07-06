@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ******************************************************************************/
 
-#include <simple_svg/simple_svg_1.0.0.hpp>
+#include <simple_svg.hpp>
 
 using namespace svg;
 
@@ -41,8 +41,6 @@ int main()
     Dimensions dimensions(100, 100);
     Dimensions window(900, 900);
     Document doc("my.svg", Layout(dimensions, window, Layout::Origin::BottomLeft));
-
-    std::cout << doc.toString();
 
     // Red image border.
     Polygon border(Stroke(1, Color::Red));

@@ -151,9 +151,7 @@ namespace svg
             , scale(_scale)
             , origin(_origin)
             , origin_offset(_origin_offset)
-            {
-                std::cout << "the layout ctor";
-            }
+            { }
         Dimensions dimensions;
         Dimensions window;
         double scale;
