@@ -39,8 +39,10 @@ using namespace svg;
 int main()
 {
     Dimensions dimensions(100, 100);
-    Dimensions window(1000, 1000);
-    Document doc("my.svg", Layout(dimensions, window, Layout::BottomLeft));
+    Dimensions window(900, 900);
+    Document doc("my.svg", Layout(dimensions, window, Layout::Origin::BottomLeft));
+
+    std::cout << doc.toString();
 
     // Red image border.
     Polygon border(Stroke(1, Color::Red));

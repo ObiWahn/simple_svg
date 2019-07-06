@@ -138,11 +138,12 @@ namespace svg
     // Defines the dimensions, scale, origin, and origin offset of the document.
     struct Layout
     {
-        enum Origin { TopLeft, BottomLeft, TopRight, BottomRight };
+        enum class Origin { TopLeft, BottomLeft, TopRight, BottomRight };
 
-        Layout(Dimensions const & _dimensions = Dimensions(400, 300)
-              ,Dimensions const & _window = Dimensions(1500, 1500)
-              ,Origin _origin = BottomLeft
+        Layout() = delete;
+        explicit Layout(Dimensions const & _dimensions = Dimensions(400, 300)
+              ,Dimensions const & _window = Dimensions(900, 900)
+              ,Origin _origin = Origin::BottomLeft
               ,double _scale = 1
               ,Point const&  _origin_offset = Point(0,0))
             : dimensions(_dimensions)
@@ -150,7 +151,9 @@ namespace svg
             , scale(_scale)
             , origin(_origin)
             , origin_offset(_origin_offset)
-            { }
+            {
+                std::cout << "the layout ctor";
+            }
         Dimensions dimensions;
         Dimensions window;
         double scale;
@@ -163,11 +166,11 @@ namespace svg
     {
         auto x_out = (x + layout.origin_offset.x) * layout.scale;
         switch (layout.origin) {
-            case Layout::TopLeft:
-            case Layout::BottomLeft:
+            case Layout::Origin::TopLeft:
+            case Layout::Origin::BottomLeft:
                 return x_out;
-            case Layout::TopRight:
-            case Layout::BottomRight:
+            case Layout::Origin::TopRight:
+            case Layout::Origin::BottomRight:
             default: //avoid warnging
                 return layout.dimensions.width - x_out - w;
         }
@@ -178,11 +181,11 @@ namespace svg
         auto y_out = (y + layout.origin_offset.y) * layout.scale;
 
         switch (layout.origin) {
-            case Layout::TopLeft:
-            case Layout::TopRight:
+            case Layout::Origin::TopLeft:
+            case Layout::Origin::TopRight:
                 return y_out;
-            case Layout::BottomLeft:
-            case Layout::BottomRight:
+            case Layout::Origin::BottomLeft:
+            case Layout::Origin::BottomRight:
             default: //avoid warnging
                 return layout.dimensions.height - y_out - h;
         }
@@ -628,13 +631,13 @@ namespace svg
     class Document
     {
     public:
-        Document(std::string const & file_name, Layout layout = Layout())
+        explicit Document(std::string const & file_name, Layout layout)
             : layout(layout)
             , stream_real(file_name)
             , stream(stream_real.value())
             { }
 
-        Document(std::ostream& out, Layout layout = Layout())
+        explicit Document(std::ostream& out, Layout layout)
             : layout(layout)
             , stream(out)
             { }
