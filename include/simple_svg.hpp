@@ -74,26 +74,26 @@ namespace svg
     {
     public:
         optional<T>(T const & type)
-            : valid(true), type(type) { }
-        optional<T>() : valid(false), type(T()) { }
+            : _valid(true), _type(type) { }
+        optional<T>() : _valid(false), _type(T()) { }
         T * operator->()
         {
             // If we try to access an invalid value, an exception is thrown.
-            if (!valid)
+            if (!_valid)
                 throw std::exception();
 
-            return &type;
+            return &_type;
         }
         // Test for validity.
-        bool operator!() const { return !valid; }
+        bool operator!() const { return !_valid; }
     private:
-        bool valid;
-        T type;
+        bool _valid;
+        T _type;
     };
 
     struct Dimensions
     {
-        Dimensions(double width, double height) : width(width), height(height) { }
+        Dimensions(double width_, double height_) : width(width_), height(height_) { }
         Dimensions(double combined = 0) : width(combined), height(combined) { }
         double width;
         double height;
@@ -101,7 +101,7 @@ namespace svg
 
     struct Point
     {
-        Point(double x = 0, double y = 0) : x(x), y(y) { }
+        Point(double x_ = 0, double y_ = 0) : x(x_), y(y_) { }
         double x;
         double y;
     };
@@ -259,9 +259,9 @@ namespace svg
     class Fill : public Serializeable
     {
     public:
-        Fill(Color::Defaults color) : color(color) { }
-        Fill(Color color = Color::Transparent)
-            : color(color) { }
+        Fill(Color::Defaults color_) : color(color_) { }
+        Fill(Color color_ = Color::Transparent)
+            : color(color_) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -275,8 +275,8 @@ namespace svg
     class Stroke : public Serializeable
     {
     public:
-        Stroke(double width = -1, Color color = Color::Transparent)
-            : width(width), color(color) { }
+        Stroke(double width_ = -1, Color color_ = Color::Transparent)
+            : width(width_), color(color_) { }
         std::string toString(Layout const & layout) const
         {
             // If stroke width is invalid.
@@ -295,7 +295,7 @@ namespace svg
     class Font : public Serializeable
     {
     public:
-        Font(double size = 12, std::string const & family = "Verdana") : size(size), family(family) { }
+        Font(double size_ = 12, std::string const & family_ = "Verdana") : size(size_), family(family_) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -310,8 +310,8 @@ namespace svg
     class Shape : public Serializeable
     {
     public:
-        Shape(Fill const & fill = Fill(), Stroke const & stroke = Stroke())
-            : fill(fill), stroke(stroke) { }
+        Shape(Fill const & fill_ = Fill(), Stroke const & stroke_ = Stroke())
+            : fill(fill_), stroke(stroke_) { }
         virtual ~Shape() { }
         virtual std::string toString(Layout const & layout) const = 0;
         virtual void offset(Point const & offset) = 0;
@@ -319,6 +319,7 @@ namespace svg
         Fill fill;
         Stroke stroke;
     };
+
     template <typename T>
     std::string vectorToString(std::vector<T> collection, Layout const & layout)
     {
@@ -332,9 +333,9 @@ namespace svg
     class Circle : public Shape
     {
     public:
-        Circle(Point const & center, double diameter, Fill const & fill,
-            Stroke const & stroke = Stroke())
-            : Shape(fill, stroke), center(center), radius(diameter / 2) { }
+        Circle(Point const & center_, double diameter_, Fill const & fill_,
+            Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_), center(center_), radius(diameter_ / 2) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -357,10 +358,10 @@ namespace svg
     class Elipse : public Shape
     {
     public:
-        Elipse(Point const & center, double width, double height,
-            Fill const & fill = Fill(), Stroke const & stroke = Stroke())
-            : Shape(fill, stroke), center(center), radius_width(width / 2),
-            radius_height(height / 2) { }
+        Elipse(Point const & center_, double width_, double height_,
+            Fill const & fill_ = Fill(), Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_), center(center_), radius_width(width_ / 2),
+            radius_height(height_ / 2) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -385,10 +386,10 @@ namespace svg
     class Rectangle : public Shape
     {
     public:
-        Rectangle(Point const & edge, double width, double height,
-            Fill const & fill = Fill(), Stroke const & stroke = Stroke())
-            : Shape(fill, stroke), edge(edge), width(width),
-            height(height) { }
+        Rectangle(Point const & edge_, double width_, double height_,
+            Fill const & fill_ = Fill(), Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_), edge(edge_), width(width_),
+            height(height_) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -414,10 +415,10 @@ namespace svg
     class Line : public Shape
     {
     public:
-        Line(Point const & start_point, Point const & end_point,
-            Stroke const & stroke = Stroke())
-            : Shape(Fill(), stroke), start_point(start_point),
-            end_point(end_point) { }
+        Line(Point const & start_point_, Point const & end_point_,
+            Stroke const & stroke_ = Stroke())
+            : Shape(Fill(), stroke_), start_point(start_point_),
+            end_point(end_point_) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -444,9 +445,9 @@ namespace svg
     class Polygon : public Shape
     {
     public:
-        Polygon(Fill const & fill = Fill(), Stroke const & stroke = Stroke())
-            : Shape(fill, stroke) { }
-        Polygon(Stroke const & stroke = Stroke()) : Shape(Color::Transparent, stroke) { }
+        Polygon(Fill const & fill_ = Fill(), Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_) { }
+        Polygon(Stroke const & stroke_ = Stroke()) : Shape(Color::Transparent, stroke_) { }
         Polygon & operator<<(Point const & point)
         {
             points.push_back(point);
@@ -479,12 +480,12 @@ namespace svg
     class Polyline : public Shape
     {
     public:
-        Polyline(Fill const & fill = Fill(), Stroke const & stroke = Stroke())
-            : Shape(fill, stroke) { }
-        Polyline(Stroke const & stroke = Stroke()) : Shape(Color::Transparent, stroke) { }
-        Polyline(std::vector<Point> const & points,
-            Fill const & fill = Fill(), Stroke const & stroke = Stroke())
-            : Shape(fill, stroke), points(points) { }
+        Polyline(Fill const & fill_ = Fill(), Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_) { }
+        Polyline(Stroke const & stroke_ = Stroke()) : Shape(Color::Transparent, stroke_) { }
+        Polyline(std::vector<Point> const & points_,
+            Fill const & fill_ = Fill(), Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_), points(points_) { }
         Polyline & operator<<(Point const & point)
         {
             points.push_back(point);
@@ -516,9 +517,9 @@ namespace svg
     class Text : public Shape
     {
     public:
-        Text(Point const & origin, std::string const & content, Fill const & fill = Fill(),
-             Font const & font = Font(), Stroke const & stroke = Stroke())
-            : Shape(fill, stroke), origin(origin), content(content), font(font) { }
+        Text(Point const & origin_, std::string const & content_, Fill const & fill_ = Fill(),
+             Font const & font_ = Font(), Stroke const & stroke_ = Stroke())
+            : Shape(fill_, stroke_), origin(origin_), content(content_), font(font_) { }
         std::string toString(Layout const & layout) const
         {
             std::stringstream ss;
@@ -543,9 +544,9 @@ namespace svg
     class LineChart : public Shape
     {
     public:
-        LineChart(Dimensions margin = Dimensions(), double scale = 1,
-                  Stroke const & axis_stroke = Stroke(.5, Color::Purple))
-            : axis_stroke(axis_stroke), margin(margin), scale(scale) { }
+        LineChart(Dimensions margin_ = Dimensions(), double scale_ = 1,
+                  Stroke const & axis_stroke_ = Stroke(.5, Color::Purple))
+            : axis_stroke(axis_stroke_), margin(margin_), scale(scale_) { }
         LineChart & operator<<(Polyline const & polyline)
         {
             if (polyline.points.empty())
@@ -629,14 +630,14 @@ namespace svg
     class Document
     {
     public:
-        explicit Document(std::string const & file_name, Layout layout)
-            : layout(layout)
+        explicit Document(std::string const & file_name, Layout layout_)
+            : layout(layout_)
             , stream_real(file_name)
             , stream(stream_real.value())
             { }
 
-        explicit Document(std::ostream& out, Layout layout)
-            : layout(layout)
+        explicit Document(std::ostream& out, Layout layout_)
+            : layout(layout_)
             , stream(out)
             { }
 
